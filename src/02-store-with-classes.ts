@@ -23,12 +23,14 @@ class EditorStore {
 
 abstract class EditorNode<JsonValue = unknown> {
   constructor(
-    protected store: EditorStore,
-    protected jsonValue: JsonValue,
+    public readonly store: EditorStore,
+    public readonly jsonValue: JsonValue,
   ) {}
 
   abstract storeValue(): Key
 }
+
+type JSONValue<N extends EditorNode> = N['jsonValue']
 
 class TextNode extends EditorNode<string> {
   storeValue() {
@@ -36,10 +38,12 @@ class TextNode extends EditorNode<string> {
   }
 }
 
-abstract class ArrayNode<ItemJsonValue> extends EditorNode<ItemJsonValue[]> {
+abstract class ArrayNode<ChildNode extends EditorNode> extends EditorNode<
+  JSONValue<ChildNode>[]
+> {
   abstract createItemNode(
-    itemJsonValue: ItemJsonValue,
-  ): EditorNode<ItemJsonValue>
+    itemJsonValue: JSONValue<ChildNode>,
+  ): EditorNode<JSONValue<ChildNode>>
 
   storeValue() {
     return this.store.insert(() =>
@@ -48,7 +52,7 @@ abstract class ArrayNode<ItemJsonValue> extends EditorNode<ItemJsonValue[]> {
   }
 }
 
-class TextContent extends ArrayNode<string> {
+class TextContent extends ArrayNode<TextNode> {
   createItemNode(itemJsonValue: string): EditorNode<string> {
     return new TextNode(this.store, itemJsonValue)
   }
