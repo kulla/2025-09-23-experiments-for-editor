@@ -1,6 +1,5 @@
 {
   "name": "2025-09-23-experiments-for-editor",
-  "module": "index.ts",
   "type": "module",
   "private": true,
   "devDependencies": {
