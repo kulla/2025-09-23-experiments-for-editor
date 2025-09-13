@@ -47,8 +47,12 @@ abstract class ArrayNode<ChildNode extends EditorNode> extends EditorNode<
 
   storeValue() {
     return this.store.insert(() =>
-      this.jsonValue.map((item) => this.createItemNode(item).storeValue()),
+      this.children.map((child) => child.storeValue()),
     )
+  }
+
+  get children() {
+    return this.jsonValue.map((item) => this.createItemNode(item))
   }
 }
 
@@ -60,7 +64,11 @@ class TextContent extends ArrayNode<TextNode> {
 
 const store = new EditorStore()
 
-new TextContent(store, ['Hello', ' ', 'World!']).storeValue()
+const content = new TextContent(store, ['Hello', ' ', 'World!'])
+
+content.storeValue()
+
+// console.log('children', content.children)
 
 for (const [key, value] of store.getEntries()) {
   console.log(`${key}: ${value}`)
