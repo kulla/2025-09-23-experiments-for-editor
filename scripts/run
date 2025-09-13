@@ -1,0 +1,7 @@
+#!/bin/bash
+
+TARGET_FILE="$1"
+
+while inotifywait -e modify "$TARGET_FILE"; do
+    bun "$TARGET_FILE"
+done
