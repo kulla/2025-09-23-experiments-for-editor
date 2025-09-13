@@ -21,47 +21,46 @@ class EditorStore {
   }
 }
 
-abstract class EditorNode<JsonValue = unknown> {
-  constructor(public readonly jsonValue: JsonValue) {}
-
-  abstract storeValue(store: EditorStore): Key
+interface TreeNode {
+  storeValue(store: EditorStore): Key
 }
 
-type JSONValue<N extends EditorNode> = N['jsonValue']
+interface NodeType<JSONValue = unknown> {
+  createTreeNode(value: JSONValue): TreeNode
+}
 
-class TextNode extends EditorNode<string> {
-  storeValue(store: EditorStore) {
-    return store.insert(() => this.jsonValue)
+const TextType: NodeType<string> = {
+  createTreeNode(value: string): TreeNode {
+    return {
+      storeValue(store) {
+        return store.insert(() => value)
+      },
+    }
+  },
+}
+
+function createArrayType<J, C extends NodeType<J>>(
+  childType: C,
+): NodeType<J[]> {
+  return {
+    createTreeNode(value) {
+      return {
+        storeValue(store) {
+          const children = value.map((child) => childType.createTreeNode(child))
+          return store.insert(() =>
+            children.map((child) => child.storeValue(store)),
+          )
+        },
+      }
+    },
   }
 }
 
-abstract class ArrayNode<ChildNode extends EditorNode> extends EditorNode<
-  JSONValue<ChildNode>[]
-> {
-  abstract createItemNode(
-    itemJsonValue: JSONValue<ChildNode>,
-  ): EditorNode<JSONValue<ChildNode>>
-
-  storeValue(store: EditorStore) {
-    return store.insert(() =>
-      this.children.map((child) => child.storeValue(store)),
-    )
-  }
-
-  get children() {
-    return this.jsonValue.map((item) => this.createItemNode(item))
-  }
-}
-
-class TextContent extends ArrayNode<TextNode> {
-  createItemNode(itemJsonValue: string): EditorNode<string> {
-    return new TextNode(itemJsonValue)
-  }
-}
+const TextContentType = createArrayType(TextType)
 
 const store = new EditorStore()
 
-const content = new TextContent(['Hello', ' ', 'World!'])
+const content = TextContentType.createTreeNode(['Hello', ' ', 'World!'])
 
 content.storeValue(store)
 
