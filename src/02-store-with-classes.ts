@@ -36,11 +36,21 @@ class TextNode extends EditorNode<string> {
   }
 }
 
-class TextContent extends EditorNode<string[]> {
+abstract class ArrayNode<ItemJsonValue> extends EditorNode<ItemJsonValue[]> {
+  abstract createItemNode(
+    itemJsonValue: ItemJsonValue,
+  ): EditorNode<ItemJsonValue>
+
   storeValue() {
     return this.store.insert(() =>
-      this.jsonValue.map((text) => new TextNode(this.store, text).storeValue()),
+      this.jsonValue.map((item) => this.createItemNode(item).storeValue()),
     )
+  }
+}
+
+class TextContent extends ArrayNode<string> {
+  createItemNode(itemJsonValue: string): EditorNode<string> {
+    return new TextNode(this.store, itemJsonValue)
   }
 }
 
