@@ -1,0 +1,5 @@
+{
+	"eslint.validate": null,
+	"prettier.enable": false,
+	"biome.enable": true
+}
