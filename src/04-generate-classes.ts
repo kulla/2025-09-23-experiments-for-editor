@@ -26,7 +26,7 @@ abstract class TreeNode<JSONValue> {
   abstract storeValue(store: EditorStore): Key
 }
 
-type TreeNodeType<JSONValue = unknown> = new (
+type TreeNodeConstructor<JSONValue> = new (
   value: JSONValue,
 ) => TreeNode<JSONValue>
 
@@ -36,7 +36,7 @@ class TextType extends TreeNode<string> {
   }
 }
 
-function createArrayType<J, C extends TreeNodeType<J>>(childType: C) {
+function createArrayType<J>(childType: TreeNodeConstructor<J>) {
   return class extends TreeNode<J[]> {
     override storeValue(store: EditorStore) {
       return store.insert(() =>
@@ -50,7 +50,7 @@ function createArrayType<J, C extends TreeNodeType<J>>(childType: C) {
   }
 }
 
-const TextContentType = createArrayType<string, typeof TextType>(TextType)
+const TextContentType = createArrayType(TextType)
 
 const store = new EditorStore()
 
