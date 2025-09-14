@@ -39,10 +39,13 @@ class TextType extends TreeNode<string> {
 function createArrayType<J, C extends TreeNodeType<J>>(childType: C) {
   return class extends TreeNode<J[]> {
     override storeValue(store: EditorStore) {
-      const children = this.jsonValue.map((child) => new childType(child))
       return store.insert(() =>
-        children.map((child) => child.storeValue(store)),
+        this.children.map((child) => child.storeValue(store)),
       )
+    }
+
+    get children() {
+      return this.jsonValue.map((child) => new childType(child))
     }
   }
 }
@@ -55,7 +58,7 @@ const content = new TextContentType(['Hello', ' ', 'World!'])
 
 content.storeValue(store)
 
-// console.log('children', content.children)
+content.children
 
 for (const [key, value] of store.getEntries()) {
   console.log(`${key}: ${value}`)
