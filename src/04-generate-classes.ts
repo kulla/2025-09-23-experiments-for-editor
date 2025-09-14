@@ -26,9 +26,7 @@ abstract class TreeNode<JSONValue> {
   abstract storeValue(store: EditorStore): Key
 }
 
-type TreeNodeConstructor<JSONValue> = new (
-  value: JSONValue,
-) => TreeNode<JSONValue>
+type TreeNodeConstr<JSONValue> = new (value: JSONValue) => TreeNode<JSONValue>
 
 class TextType extends TreeNode<string> {
   override storeValue(store: EditorStore) {
@@ -36,7 +34,7 @@ class TextType extends TreeNode<string> {
   }
 }
 
-function ArrayNode<J>(childType: TreeNodeConstructor<J>) {
+function ArrayNode<J>(childType: TreeNodeConstr<J>) {
   return class extends TreeNode<J[]> {
     override storeValue(store: EditorStore) {
       return store.insert(() =>
