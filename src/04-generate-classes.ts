@@ -36,7 +36,7 @@ class TextType extends TreeNode<string> {
   }
 }
 
-function createArrayType<J>(childType: TreeNodeConstructor<J>) {
+function ArrayNode<J>(childType: TreeNodeConstructor<J>) {
   return class extends TreeNode<J[]> {
     override storeValue(store: EditorStore) {
       return store.insert(() =>
@@ -50,7 +50,7 @@ function createArrayType<J>(childType: TreeNodeConstructor<J>) {
   }
 }
 
-const TextContentType = createArrayType(TextType)
+const TextContentType = ArrayNode(TextType)
 
 const store = new EditorStore()
 
