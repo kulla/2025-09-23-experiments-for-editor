@@ -26,15 +26,17 @@ abstract class TreeNode<JSONValue> {
   abstract storeValue(store: EditorStore): Key
 }
 
-type TreeNodeConstr<JSONValue> = new (value: JSONValue) => TreeNode<JSONValue>
-
 class TextType extends TreeNode<string> {
   override storeValue(store: EditorStore) {
     return store.insert(() => this.jsonValue)
   }
+
+  get text() {
+    return this.jsonValue
+  }
 }
 
-function ArrayNode<J>(childType: TreeNodeConstr<J>) {
+function ArrayNode<J, N extends TreeNode<J>>(childType: new (value: J) => N) {
   return class extends TreeNode<J[]> {
     override storeValue(store: EditorStore) {
       return store.insert(() =>
@@ -56,7 +58,8 @@ const content = new TextContentType(['Hello', ' ', 'World!'])
 
 content.storeValue(store)
 
-content.children
+const firstChild = content.children[0]
+if (firstChild) console.log(firstChild.text)
 
 for (const [key, value] of store.getEntries()) {
   console.log(`${key}: ${value}`)
