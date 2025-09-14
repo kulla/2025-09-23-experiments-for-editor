@@ -22,7 +22,7 @@ class EditorStore {
 }
 
 abstract class TreeNode<JSONValue> {
-  public abstract readonly jsonValue: JSONValue
+  constructor(public readonly jsonValue: JSONValue) {}
   abstract storeValue(store: EditorStore): Key
 }
 
@@ -32,9 +32,6 @@ interface NodeType<JSONValue = unknown> {
 
 const TextType = {
   klass: class extends TreeNode<string> {
-    constructor(public readonly jsonValue: string) {
-      super()
-    }
     override storeValue(store: EditorStore) {
       return store.insert(() => this.jsonValue)
     }
@@ -47,9 +44,6 @@ const TextType = {
 function createArrayType<J, C extends NodeType<J>>(childType: C) {
   return {
     klass: class extends TreeNode<J[]> {
-      constructor(public readonly jsonValue: J[]) {
-        super()
-      }
       override storeValue(store: EditorStore) {
         const children = this.jsonValue.map((child) =>
           childType.createTreeNode(child),
