@@ -26,44 +26,32 @@ abstract class TreeNode<JSONValue> {
   abstract storeValue(store: EditorStore): Key
 }
 
-interface NodeType<JSONValue = unknown> {
-  createTreeNode(value: JSONValue): TreeNode<JSONValue>
-}
+type TreeNodeType<JSONValue = unknown> = new (
+  value: JSONValue,
+) => TreeNode<JSONValue>
 
-const TextType = {
-  klass: class extends TreeNode<string> {
-    override storeValue(store: EditorStore) {
-      return store.insert(() => this.jsonValue)
-    }
-  },
-  createTreeNode(value: string) {
-    return new this.klass(value)
-  },
-}
-
-function createArrayType<J, C extends NodeType<J>>(childType: C) {
-  return {
-    klass: class extends TreeNode<J[]> {
-      override storeValue(store: EditorStore) {
-        const children = this.jsonValue.map((child) =>
-          childType.createTreeNode(child),
-        )
-        return store.insert(() =>
-          children.map((child) => child.storeValue(store)),
-        )
-      }
-    },
-    createTreeNode(value: J[]) {
-      return new this.klass(value)
-    },
+class TextType extends TreeNode<string> {
+  override storeValue(store: EditorStore) {
+    return store.insert(() => this.jsonValue)
   }
 }
 
-const TextContentType = createArrayType(TextType)
+function createArrayType<J, C extends TreeNodeType<J>>(childType: C) {
+  return class extends TreeNode<J[]> {
+    override storeValue(store: EditorStore) {
+      const children = this.jsonValue.map((child) => new childType(child))
+      return store.insert(() =>
+        children.map((child) => child.storeValue(store)),
+      )
+    }
+  }
+}
+
+const TextContentType = createArrayType<string, typeof TextType>(TextType)
 
 const store = new EditorStore()
 
-const content = TextContentType.createTreeNode(['Hello', ' ', 'World!'])
+const content = new TextContentType(['Hello', ' ', 'World!'])
 
 content.storeValue(store)
 
