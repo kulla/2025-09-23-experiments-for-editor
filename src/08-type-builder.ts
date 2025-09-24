@@ -23,6 +23,13 @@ class TypeBuilder<T extends object, I extends Abstract<T>> {
     return this.withImplementation(ext(this.impl))
   }
 
+  extendType<T2 extends T>() {
+    return {
+      updateImplForNewType: <I2 extends Abstract<T2>>(ext: (Base: I) => I2) =>
+        TypeBuilder.create<T2>().withImplementation(ext(this.impl)),
+    }
+  }
+
   build() {
     return this.impl as A.Compute<I>
   }
@@ -75,4 +82,17 @@ export const unfinishedFooType = TypeBuilder.create<Foo>()
 export const finishedFooType = TypeBuilder.create<Foo>()
   .withImplementation(fooType)
   .withImplementation({ bar: 'baz' as string | number })
+  .finish()
+
+export const extendedType = TypeBuilder.create<Foo>()
+  .withImplementation(finishedFooType)
+  .extendType<Foo & { bar: string; getBar(): string }>()
+  .updateImplForNewType((Base) => ({
+    ...Base,
+    bar: Base.bar.toString(),
+
+    getBar() {
+      return Base.getBar.call(this).toString().toUpperCase()
+    },
+  }))
   .finish()
