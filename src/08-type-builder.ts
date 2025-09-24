@@ -19,12 +19,16 @@ class TypeBuilder<T extends object, I extends Abstract<T>> {
     return new TypeBuilder<T, I & I2>({ ...this.impl, ...impl2 })
   }
 
+  extend<I2 extends Abstract<T>>(ext: (Base: I) => I2) {
+    return this.withImplementation(ext(this.impl))
+  }
+
   build() {
     return this.impl as A.Compute<I>
   }
 
   finish(this: this & { impl: T }) {
-    return this.impl
+    return this.impl as T
   }
 
   static create<T extends object>() {
@@ -44,6 +48,24 @@ export const fooType = TypeBuilder.create<Foo>()
     },
   })
   .build()
+
+export const extendedFooType = TypeBuilder.create<Foo>()
+  .withImplementation(fooType)
+  .extend((Base) => ({
+    foo() {
+      const foo = Base.foo.call(this)
+      return `${foo}:extended`
+    },
+  }))
+  .build()
+
+console.log(
+  TypeBuilder.create<Foo>()
+    .withImplementation(extendedFooType)
+    .withImplementation({ bar: 'baz' })
+    .finish()
+    .foo(),
+)
 
 // @ts-expect-error (.finish() returns an error here because `bar` is missing)
 export const unfinishedFooType = TypeBuilder.create<Foo>()
