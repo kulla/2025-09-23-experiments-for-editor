@@ -9,34 +9,48 @@ interface Foo {
 type Abstract<T extends object> = {
   [K in keyof T]?: T[K] extends (...args: infer A) => infer R
     ? (this: T, ...args: A) => R
-    : never
+    : T[K]
 }
 
 class TypeBuilder<T extends object, I extends Abstract<T>> {
   constructor(public readonly impl: I) {}
 
-  extend<I2 extends Abstract<T>>(impl2: I2) {
+  withImplementation<I2 extends Abstract<T>>(impl2: I2) {
     return new TypeBuilder<T, I & I2>({ ...this.impl, ...impl2 })
   }
 
-  static implement<T extends object>() {
+  static create<T extends object>() {
     return new TypeBuilder<T, object>({})
   }
 
-  get implementation() {
+  build() {
     return this.impl as A.Compute<I>
+  }
+
+  finish(this: this & { impl: T }) {
+    return this.impl
   }
 }
 
-export const fooType = TypeBuilder.implement<Foo>()
-  .extend({
+export const fooType = TypeBuilder.create<Foo>()
+  .withImplementation({
     getBar() {
       return this.bar
     },
   })
-  .extend({
+  .withImplementation({
     foo() {
       return this.bar
     },
-  }).implementation
+  })
+  .build()
 
+// @ts-expect-error (.finish() returns an error here because `bar` is missing)
+export const unfinishedFooType = TypeBuilder.create<Foo>()
+  .withImplementation(fooType)
+  .finish()
+
+export const finishedFooType = TypeBuilder.create<Foo>()
+  .withImplementation(fooType)
+  .withImplementation({ bar: 'baz' as string | number })
+  .finish()
