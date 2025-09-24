@@ -19,16 +19,16 @@ class TypeBuilder<T extends object, I extends Abstract<T>> {
     return new TypeBuilder<T, I & I2>({ ...this.impl, ...impl2 })
   }
 
-  static create<T extends object>() {
-    return new TypeBuilder<T, object>({})
-  }
-
   build() {
     return this.impl as A.Compute<I>
   }
 
   finish(this: this & { impl: T }) {
     return this.impl
+  }
+
+  static create<T extends object>() {
+    return new TypeBuilder<T, object>({})
   }
 }
 
