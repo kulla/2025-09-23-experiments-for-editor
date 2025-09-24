@@ -1,4 +1,4 @@
-import { A } from 'ts-toolbelt'
+import type { A } from 'ts-toolbelt'
 
 interface Foo {
   bar: string | number
@@ -10,17 +10,6 @@ type Abstract<T extends object> = {
   [K in keyof T]?: T[K] extends (...args: infer A) => infer R
     ? (this: T, ...args: A) => R
     : never
-}
-
-type AbstractedFoo = Abstract<Foo>
-type Merge<A extends object, B extends object> = {
-  [K in keyof A | keyof B]: K extends keyof A
-    ? K extends keyof B
-      ? A[K] & B[K]
-      : A[K]
-    : K extends keyof B
-      ? B[K]
-      : never
 }
 
 class TypeBuilder<T extends object, I extends Abstract<T>> {
@@ -39,7 +28,7 @@ class TypeBuilder<T extends object, I extends Abstract<T>> {
   }
 }
 
-const fooType = TypeBuilder.implement<Foo>()
+export const fooType = TypeBuilder.implement<Foo>()
   .extend({
     getBar() {
       return this.bar
