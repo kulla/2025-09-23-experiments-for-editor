@@ -5,7 +5,9 @@ interface Foo {
   getBar(): string
 }
 
-type PickKeys<T extends object, V> = Exclude<keyof T, O.FilterKeys<T, V>>
+type PickKeys<T extends object, V> = {
+  [K in keyof T]-?: T[K] extends V ? K : never
+}[keyof T]
 type PrototypeOf<T extends object> = {
   [K in PickKeys<T, F.Function>]: T[K] extends (
     this: infer U,
@@ -26,5 +28,5 @@ interface AbstractType<T extends object, A extends Partial<PrototypeOf<T>>> {
 
 interface ConcreteType<T extends object>
   extends AbstractType<T, PrototypeOf<T>> {
-  new (data: DataOf<T>): T & { type: AbstractType<T, PrototypeOf<T>> }
+  create(this: T, data: DataOf<T>): T
 }
