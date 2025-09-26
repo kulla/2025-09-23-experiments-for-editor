@@ -18,33 +18,36 @@ export const fooProtoTest: FooPrototype = {
   },
 }
 
-class AbstractType<T extends object, P extends AbstractPrototypeOf<T>> {
+class AbstractTypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
   constructor(public readonly prototype: P) {}
 
-  add<P2 extends AbstractPrototypeOf<T>>(prototype: P2) {
-    return new AbstractType<T, P & P2>({ ...this.prototype, ...prototype })
+  withMethods<P2 extends AbstractPrototypeOf<T>>(prototype: P2) {
+    return new AbstractTypeBuilder<T, P & P2>({
+      ...this.prototype,
+      ...prototype,
+    })
   }
 
   extend<P2 extends AbstractPrototypeOf<T>>(
     ext: (Base: P) => P2,
-  ): AbstractType<T, P & P2> {
-    return this.add(ext(this.prototype))
+  ): AbstractTypeBuilder<T, P & P2> {
+    return this.withMethods(ext(this.prototype))
   }
 
   extendType<T2 extends T>() {
     return {
       updateImplForNewType: <P2 extends AbstractPrototypeOf<T2>>(
         ext: (Base: P) => P2,
-      ) => new AbstractType<T2, P2>(ext(this.prototype)),
+      ) => new AbstractTypeBuilder<T2, P2>(ext(this.prototype)),
     }
   }
 
-  static startImplementation<T extends object>() {
-    return new AbstractType<T, object>({})
+  static begin<T extends object>() {
+    return new AbstractTypeBuilder<T, object>({})
   }
 }
 
 interface ConcreteType<T extends object>
-  extends AbstractType<T, PrototypeOf<T>> {
+  extends AbstractTypeBuilder<T, PrototypeOf<T>> {
   create(this: T, data: DataOf<T>): T
 }
