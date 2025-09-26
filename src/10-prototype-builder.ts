@@ -35,11 +35,18 @@ class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
     return new TypeBuilder<T, P & P2>({ ...this.prototype, ...extension })
   }
 
-  forSubtype<T2 extends T>() {
+  extendType<T2>() {
     return {
-      withSubtypeMethods: <P2 extends AbstractPrototypeOf<T2>>(
-        ext: (Base: P) => P2,
-      ) => new TypeBuilder<T2, P2>(ext(this.prototype)),
+      withMethods: <P2 extends AbstractPrototypeOf<T & T2>>(
+        ext: P2 | ((Base: P) => P2),
+      ) => {
+        const extension = typeof ext === 'function' ? ext(this.prototype) : ext
+
+        return new TypeBuilder<T & T2, P & P2>({
+          ...this.prototype,
+          ...extension,
+        })
+      },
     }
   }
 
@@ -70,14 +77,12 @@ const fooType = TypeBuilder.begin<Foo>()
 console.log(fooType.create({ bar: 'baz' }).getBar()) // 'baz'
 
 const bazType = fooType
-  .forSubtype<Foo & { baz(): string }>()
-  .withSubtypeMethods((Base) => ({
-    ...Base,
-
+  .extendType<{ baz(): string }>()
+  .withMethods({
     baz() {
       return this.bar + this.bar + this.bar
     },
-  }))
+  })
   .finish()
 
 console.log(bazType.create({ bar: 'baz' }).baz())
