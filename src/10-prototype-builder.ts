@@ -5,14 +5,14 @@ interface Foo {
   getBar(): string
 }
 
-type AddThis<T extends object, F> = F extends (
+type WithThis<TThis extends object, Func> = Func extends (
   this: infer U,
   ...args: infer A
 ) => infer R
-  ? (this: T & U, ...args: A) => R
+  ? (this: TThis & U, ...args: A) => R
   : never
 type PrototypeOf<T extends object> = {
-  [K in O.SelectKeys<T, F.Function>]: AddThis<T, T[K]>
+  [K in O.SelectKeys<T, F.Function>]: WithThis<T, T[K]>
 }
 type AbstractPrototypeOf<T extends object> = Partial<PrototypeOf<T>>
 type DataOf<T extends object> = O.Filter<T, F.Function>
