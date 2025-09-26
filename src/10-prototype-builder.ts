@@ -62,7 +62,8 @@ class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
 
 class ConcreteType<T extends object> extends TypeBuilder<T, PrototypeOf<T>> {
   create(data: DataOf<T>): T {
-    return Object.setPrototypeOf(data, this.prototype)
+    const instance = Object.create(this.prototype)
+    return Object.assign(instance, data) as T
   }
 }
 
