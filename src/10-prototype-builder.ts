@@ -1,4 +1,4 @@
-import type { A, F, O } from 'ts-toolbelt'
+import type { F, O } from 'ts-toolbelt'
 
 interface Foo {
   bar: string
@@ -26,7 +26,7 @@ export const fooProtoTest: FooPrototype = {
   },
 }
 
-class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
+class TypeBuilder<T extends object, P> {
   constructor(public readonly prototype: P) {}
 
   withMethods<P2 extends AbstractPrototypeOf<T>>(ext: P2 | ((Base: P) => P2)) {
@@ -36,18 +36,7 @@ class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
   }
 
   extendType<T2>() {
-    return {
-      withMethods: <P2 extends AbstractPrototypeOf<T & T2>>(
-        ext: P2 | ((Base: P) => P2),
-      ) => {
-        const extension = typeof ext === 'function' ? ext(this.prototype) : ext
-
-        return new TypeBuilder<T & T2, P & P2>({
-          ...this.prototype,
-          ...extension,
-        })
-      },
-    }
+    return new TypeBuilder<T & T2, P>(this.prototype)
   }
 
   finish(this: this & { prototype: PrototypeOf<T> }) {
@@ -78,7 +67,7 @@ const fooType = TypeBuilder.begin<Foo>()
 console.log(fooType.create({ bar: 'baz' }).getBar()) // 'baz'
 
 const bazType = fooType
-  .extendType<{ baz(): string }>()
+  .extendType<{ baz(): string | number }>()
   .withMethods({
     baz() {
       return this.bar + this.bar + this.bar
@@ -86,4 +75,15 @@ const bazType = fooType
   })
   .finish()
 
-console.log(bazType.create({ bar: 'baz' }).baz())
+console.log(bazType.create({ bar: 'baz' }).baz()) // 'bazbazbaz'
+
+const quxType = bazType
+  .extendType<{ baz(): string }>()
+  .withMethods((Base) => ({
+    baz() {
+      return Base.getBar.call(this).toUpperCase()
+    },
+  }))
+  .finish()
+
+console.log(quxType.create({ bar: 'baz' }).baz()) // 'BAZ'
