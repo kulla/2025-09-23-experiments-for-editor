@@ -18,32 +18,29 @@ export const fooProtoTest: FooPrototype = {
   },
 }
 
-class AbstractTypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
+class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
   constructor(public readonly prototype: P) {}
 
   withMethods<P2 extends AbstractPrototypeOf<T>>(ext: P2 | ((Base: P) => P2)) {
     const extension = typeof ext === 'function' ? ext(this.prototype) : ext
 
-    return new AbstractTypeBuilder<T, P & P2>({
-      ...this.prototype,
-      ...extension,
-    })
+    return new TypeBuilder<T, P & P2>({ ...this.prototype, ...extension })
   }
 
   forSubtype<T2 extends T>() {
     return {
       withSubtypeMethods: <P2 extends AbstractPrototypeOf<T2>>(
         ext: (Base: P) => P2,
-      ) => new AbstractTypeBuilder<T2, P2>(ext(this.prototype)),
+      ) => new TypeBuilder<T2, P2>(ext(this.prototype)),
     }
   }
 
   static begin<T extends object>() {
-    return new AbstractTypeBuilder<T, object>({})
+    return new TypeBuilder<T, object>({})
   }
 }
 
 interface ConcreteType<T extends object>
-  extends AbstractTypeBuilder<T, PrototypeOf<T>> {
+  extends TypeBuilder<T, PrototypeOf<T>> {
   create(this: T, data: DataOf<T>): T
 }
