@@ -1,4 +1,4 @@
-import type { F, O } from 'ts-toolbelt'
+import type { A, F, O } from 'ts-toolbelt'
 
 interface Foo {
   bar: string
@@ -58,3 +58,26 @@ class ConcreteType<T extends object> extends TypeBuilder<T, PrototypeOf<T>> {
     return Object.setPrototypeOf(data, this.prototype)
   }
 }
+
+const fooType = TypeBuilder.begin<Foo>()
+  .withMethods({
+    getBar() {
+      return this.bar
+    },
+  })
+  .finish()
+
+console.log(fooType.create({ bar: 'baz' }).getBar()) // 'baz'
+
+const bazType = fooType
+  .forSubtype<Foo & { baz(): string }>()
+  .withSubtypeMethods((Base) => ({
+    ...Base,
+
+    baz() {
+      return this.bar + this.bar + this.bar
+    },
+  }))
+  .finish()
+
+console.log(bazType.create({ bar: 'baz' }).baz())
