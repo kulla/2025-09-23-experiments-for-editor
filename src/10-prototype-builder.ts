@@ -19,4 +19,12 @@ type DataOf<T extends object> = O.Filter<T, F.Function>
 export type FooPrototype = PrototypeOf<Foo> // { getBar: () => string }
 export type FooData = DataOf<Foo> // { bar: string }
 
-console.log(Object.keys({ a: 1, b: 2 })) // ['a', 'b']
+interface AbstractType<T extends object, A extends Partial<PrototypeOf<T>>> {
+  readonly __type__: T
+  readonly prototype: A
+}
+
+interface ConcreteType<T extends object>
+  extends AbstractType<T, PrototypeOf<T>> {
+  new (data: DataOf<T>): T & { type: AbstractType<T, PrototypeOf<T>> }
+}
