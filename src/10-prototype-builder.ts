@@ -48,7 +48,8 @@ class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
   }
 
   static begin<T extends object>() {
-    return new TypeBuilder<T, object>({})
+    // biome-ignore lint/complexity/noBannedTypes: {} is perfectly fine her
+    return new TypeBuilder<T, {}>({})
   }
 }
 
