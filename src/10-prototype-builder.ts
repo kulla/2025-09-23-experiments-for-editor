@@ -5,7 +5,15 @@ interface Foo {
   getBar(): string
 }
 
-type PrototypeOf<T extends object> = O.Select<T, F.Function> & ThisType<T>
+type AddThis<T extends object, F> = F extends (
+  this: infer U,
+  ...args: infer A
+) => infer R
+  ? (this: T & U, ...args: A) => R
+  : never
+type PrototypeOf<T extends object> = {
+  [K in O.SelectKeys<T, F.Function>]: AddThis<T, T[K]>
+}
 type AbstractPrototypeOf<T extends object> = Partial<PrototypeOf<T>>
 type DataOf<T extends object> = O.Filter<T, F.Function>
 
