@@ -5,9 +5,7 @@ interface Foo {
   getBar(): string
 }
 
-type PrototypeOf<T extends object> = {
-  [K in O.SelectKeys<T, F.Function>]: T[K]
-} & ThisType<T>
+type PrototypeOf<T extends object> = O.Select<T, F.Function> & ThisType<T>
 type DataOf<T extends object> = O.Filter<T, F.Function>
 
 export type FooPrototype = PrototypeOf<Foo> // { getBar: () => string }
