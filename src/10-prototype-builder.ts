@@ -34,9 +34,9 @@ class AbstractTypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
     return this.withMethods(ext(this.prototype))
   }
 
-  extendType<T2 extends T>() {
+  forSubtype<T2 extends T>() {
     return {
-      updateImplForNewType: <P2 extends AbstractPrototypeOf<T2>>(
+      withSubtypeMethods: <P2 extends AbstractPrototypeOf<T2>>(
         ext: (Base: P) => P2,
       ) => new AbstractTypeBuilder<T2, P2>(ext(this.prototype)),
     }
