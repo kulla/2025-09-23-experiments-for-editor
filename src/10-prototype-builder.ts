@@ -31,12 +31,11 @@ class AbstractType<T extends object, P extends AbstractPrototypeOf<T>> {
     return this.add(ext(this.prototype))
   }
 
-  extendType<T2 extends object>() {
+  extendType<T2 extends T>() {
     return {
       updateImplForNewType: <P2 extends AbstractPrototypeOf<T2>>(
-        ext: (Base: AbstractPrototypeOf<T2>) => P2,
-      ): AbstractType<T2, P2> =>
-        new AbstractType<T2, P2>(ext({} as AbstractPrototypeOf<T2>)),
+        ext: (Base: P) => P2,
+      ) => new AbstractType<T2, P2>(ext(this.prototype)),
     }
   }
 
