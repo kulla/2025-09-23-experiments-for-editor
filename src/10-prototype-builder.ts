@@ -40,7 +40,8 @@ class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
   }
 }
 
-interface ConcreteType<T extends object>
-  extends TypeBuilder<T, PrototypeOf<T>> {
-  create(this: T, data: DataOf<T>): T
+class ConcreteType<T extends object> extends TypeBuilder<T, PrototypeOf<T>> {
+  create(data: DataOf<T>): T {
+    return Object.setPrototypeOf(data, this.prototype)
+  }
 }
