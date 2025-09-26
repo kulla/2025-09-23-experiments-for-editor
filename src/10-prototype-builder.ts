@@ -21,17 +21,13 @@ export const fooProtoTest: FooPrototype = {
 class AbstractTypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
   constructor(public readonly prototype: P) {}
 
-  withMethods<P2 extends AbstractPrototypeOf<T>>(prototype: P2) {
+  withMethods<P2 extends AbstractPrototypeOf<T>>(ext: P2 | ((Base: P) => P2)) {
+    const extension = typeof ext === 'function' ? ext(this.prototype) : ext
+
     return new AbstractTypeBuilder<T, P & P2>({
       ...this.prototype,
-      ...prototype,
+      ...extension,
     })
-  }
-
-  extend<P2 extends AbstractPrototypeOf<T>>(
-    ext: (Base: P) => P2,
-  ): AbstractTypeBuilder<T, P & P2> {
-    return this.withMethods(ext(this.prototype))
   }
 
   forSubtype<T2 extends T>() {
