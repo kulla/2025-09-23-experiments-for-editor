@@ -35,6 +35,10 @@ class TypeBuilder<T extends object, P extends AbstractPrototypeOf<T>> {
     }
   }
 
+  finish(this: this & { prototype: PrototypeOf<T> }) {
+    return new ConcreteType<T>(this.prototype)
+  }
+
   static begin<T extends object>() {
     return new TypeBuilder<T, object>({})
   }
