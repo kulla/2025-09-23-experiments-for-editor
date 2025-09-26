@@ -5,11 +5,8 @@ interface Foo {
   getBar(): string
 }
 
-type PickKeys<T extends object, V> = {
-  [K in keyof T]-?: T[K] extends V ? K : never
-}[keyof T]
 type PrototypeOf<T extends object> = {
-  [K in PickKeys<T, F.Function>]: T[K]
+  [K in O.SelectKeys<T, F.Function>]: T[K]
 } & ThisType<T>
 type DataOf<T extends object> = O.Filter<T, F.Function>
 
