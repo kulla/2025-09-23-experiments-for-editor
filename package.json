@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "es-toolkit": "^1.39.10",
     "ts-toolbelt": "^9.6.0"
   }
 }
