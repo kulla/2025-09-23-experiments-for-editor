@@ -53,43 +53,46 @@ interface Store {
   getParentKey(key: string): string | null
 }
 
-interface NodeType {
+interface NodeType<V> {
   getParentKey(store: Store, key: string): string | null
-  guard: Guard<this['__spec__']['valueType']>
-  getValue(store: Store, key: string): this['__spec__']['valueType']
-  __spec__: { valueType: unknown }
+  guard: Guard<V>
+  getValue(store: Store, key: string): V
+  __spec__: V
 }
 
-const abstractNodeType = TypeBuilder.begin<NodeType>()
-  .extend({
-    getParentKey(store, key) {
-      return store.getParentKey(key)
-    },
-  })
-  .extend({
-    getValue(store, key) {
-      return store.get(this.guard, key)
-    },
-  })
-  .extend({
-    __spec__: undefined as never,
-  })
+function createAbstractNodeType<V>() {
+  return TypeBuilder.begin<NodeType<V>>()
+    .extend({
+      getParentKey(store, key) {
+        return store.getParentKey(key)
+      },
+    })
+    .extend({
+      getValue(store, key) {
+        return store.get(this.guard, key)
+      },
+    })
+    .extend({
+      __spec__: undefined as never,
+    })
+}
 
-type NonRootNodeType = TargetType<typeof abstractNonRootType>
-const abstractNonRootType = abstractNodeType
-  .extendType<{ getParentKey(store: Store, key: string): string }>()
-  .extend((Base) => ({
-    getParentKey(store, key) {
-      const parentKey = Base.getParentKey.call(this, store, key)
-      if (parentKey === null) {
-        throw new Error('This node has no parent')
-      }
-      return parentKey
-    },
-  }))
+type NonRootNodeType = TargetType<ReturnType<typeof createAbstractNonRoot>>
+function createAbstractNonRoot<V>() {
+  return createAbstractNodeType<V>()
+    .extendType<{ getParentKey(store: Store, key: string): string }>()
+    .extend((Base) => ({
+      getParentKey(store, key) {
+        const parentKey = Base.getParentKey.call(this, store, key)
+        if (parentKey === null) {
+          throw new Error('This node has no parent')
+        }
+        return parentKey
+      },
+    }))
+}
 
-export const stringType = abstractNonRootType
-  .extendType<{ __spec__: { valueType: string } }>()
+export const stringType = createAbstractNonRoot<string>()
   .extend({
     guard(value) {
       return typeof value === 'string'
@@ -98,15 +101,25 @@ export const stringType = abstractNonRootType
   .finish()
 
 function array<T extends NonRootNodeType>(itemType: T) {
-  return abstractNonRootType
-    .extendType<{
-      __spec__: { valueType: Array<T['__spec__']['valueType']> }
-    }>()
+  return createAbstractNonRoot<Array<T['__spec__']>>()
+    .extendType<{ getChildren(store: Store, key: string): T['__spec__'][] }>()
     .extend({
-      guard(value) {
+      guard(value): value is Array<T['__spec__']> {
         return Array.isArray(value) && value.every((v) => itemType.guard(v))
+      },
+    })
+    .extend({
+      getChildren(store, key) {
+        return this.getValue(store, key)
       },
     })
 }
 
-const stringArrayType = array(stringType).finish()
+export const stringArrayType = array(stringType)
+  .extendType<{ foo(store: Store, key: string): void }>()
+  .extend({
+    foo(...args) {
+      console.log(this.getChildren(...args))
+    },
+  })
+  .finish()
