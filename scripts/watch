@@ -1,0 +1,21 @@
+#!/bin/bash
+
+function current_time_in_seconds() {
+    date +%s
+}
+
+LAST_RUN=$(current_time_in_seconds)
+MIN_INTERVAL=1
+
+inotifywait -m -e create -e moved_to -e modify --format %w%f -r src | while read -r FILE; do
+  NOW=$(current_time_in_seconds)
+
+  if (( NOW - LAST_RUN > MIN_INTERVAL )); then
+    echo ""
+    echo "== $FILE =="
+    echo ""
+
+    bun "$FILE"
+    LAST_RUN=$NOW
+  fi
+done
