@@ -1,5 +1,3 @@
-import type { getParentKey } from './14-api-proposal'
-
 type MergeRight<A, B> = {
   [K in keyof A | keyof B]: K extends keyof B
     ? B[K]
