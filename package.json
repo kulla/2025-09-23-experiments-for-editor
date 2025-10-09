@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "es-toolkit": "^1.39.10",
-    "ts-toolbelt": "^9.6.0"
+    "ts-toolbelt": "^9.6.0",
+    "yjs": "^13.6.27"
   }
 }
