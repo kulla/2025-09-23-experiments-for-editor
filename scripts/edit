@@ -1,0 +1,15 @@
+#!/bin/bash
+
+TARGET_FILE="$1"
+
+if [ -z "$TARGET_FILE" ]; then
+  echo "Usage: $0 <file-to-edit>"
+  exit 1
+fi
+
+"${EDITOR:-nano}" "$TARGET_FILE"
+
+if [[ -f "$TARGET_FILE" ]] && git status --porcelain -- "$TARGET_FILE" | grep -q .; then
+	git add "$TARGET_FILE"
+	git commit -m "Add/update $TARGET_FILE"
+fi
