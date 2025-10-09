@@ -72,9 +72,14 @@ const exampleArrayNode: ArrayNode = {
   ],
 }
 
+const exampleContext: Context = {
+  logger: createLogger(),
+  storage: createStorage(),
+}
+
 console.log(
   ContextFunc.map(ArrayNodeFunc.getChildren, {
     data: exampleArrayNode,
-    context: {},
+    context: exampleContext,
   }),
 )
