@@ -15,4 +15,14 @@ const numberToStringConverter: ConvertTo<number, string> = {
   },
 }
 
+function identityConverter<T>(): ConvertTo<T, T> {
+  return {
+    convert(value: T): T {
+      return value
+    },
+  }
+}
+
 display(numberToStringConverter, 123) // Output: "123"
+
+display(identityConverter<string>(), 'Hello World') // Output: 456
