@@ -1,21 +1,19 @@
 export function MultipleChoiceExercise(context) {
   const { register } = context
 
-  const MultipleChoiceAnswers = register
-    .createNodeType('MultipleChoiceAnswers')
+  const MultipleChoiceAnswer = register
+    .createNodeType('MultipleChoiceAnswer')
     .extend(
-      array(
-        register
-          .createNodeType('MultipleChoiceAnswer')
-          .extend(
-            object(
-              parameter('isCorrect', BooleanType(context)),
-              parameter('answer', TextType(context)),
-            ),
-          )
-          .save(),
+      object(
+        parameter('isCorrect', BooleanType(context)),
+        parameter('answer', TextType(context)),
       ),
     )
+    .save()
+
+  const MultipleChoiceAnswers = register
+    .createNodeType('MultipleChoiceAnswers')
+    .extend(array(MultipleChoiceAnswer))
     .save()
 
   return register
