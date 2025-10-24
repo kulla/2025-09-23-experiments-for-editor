@@ -26,6 +26,7 @@ export function MultipleChoiceExercise(context) {
     )
     .extend({
       render() {
+        // Here special logic implementes
         return null
       },
     })
