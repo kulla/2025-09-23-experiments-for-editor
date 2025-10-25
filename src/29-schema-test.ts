@@ -105,7 +105,7 @@ export class PrefixCounter implements IdGenerator {
   }
 }
 
-export function assert(condition: any, msg: string): asserts condition {
+export function assert(condition: unknown, msg: string): asserts condition {
   if (!condition) throw new Error(msg)
 }
 
@@ -117,54 +117,6 @@ export function getSpec(reg: SpecRegistry, type: string): NodeSpec {
 
 // ---------- External Behavior Functions (switching on kind) ----------
 
-/** Validate that a nested node conforms to its spec (shape only) */
-export function validateNested(node: NestedNode, reg: SpecRegistry): void {
-  const spec = getSpec(reg, node.type)
-  switch (spec.kind) {
-    case 'array':
-      assert(node.kind === 'array', `${spec.name} expects kind=array`)
-      assert(Array.isArray(node.items), `${spec.name} items must be array`)
-      if (spec.itemType)
-        for (const it of node.items) {
-          assert(
-            it.type === spec.itemType,
-            `${spec.name} expects item type ${spec.itemType}, got ${it.type}`,
-          )
-          validateNested(it, reg)
-        }
-      return
-    case 'object':
-      assert(node.kind === 'object', `${spec.name} expects kind=object`)
-      assert(!!spec.fields, `${spec.name} must define fields[]`)
-      for (const f of spec.fields) {
-        const child = node.fields[f.key]
-        if (!child) {
-          assert(!!f.optional, `${spec.name}.${f.key} is required`)
-        } else {
-          assert(
-            child.type === f.type,
-            `${spec.name}.${f.key} expects ${f.type}, got ${child.type}`,
-          )
-          validateNested(child, reg)
-        }
-      }
-      return
-    case 'singleton':
-      assert(node.kind === 'singleton', `${spec.name} expects kind=singleton`)
-      assert(!!spec.childType, `${spec.name} must define childType`)
-      assert(
-        node.child.type === spec.childType,
-        `${spec.name} wraps ${spec.childType}, got ${node.child.type}`,
-      )
-      validateNested(node.child, reg)
-      return
-    case 'value':
-      assert(node.kind === 'value', `${spec.name} expects kind=value`)
-      // Value payload shape left unconstrained here
-      return
-  }
-}
-
 /** Convert nested node -> flat nodes; return root id */
 export function storeNested(
   node: NestedNode,
@@ -172,7 +124,6 @@ export function storeNested(
   reg: SpecRegistry,
   ids: IdGenerator = new PrefixCounter('id_'),
 ): NodeId {
-  validateNested(node, reg)
   const spec = getSpec(reg, node.type)
   const id = ids.next()
 
@@ -255,7 +206,7 @@ export function childIdsOf(node: FlatNode): NodeId[] {
 }
 
 /** Generic traversal over flat storage, pre-order */
-export function traverse(
+function traverse(
   rootId: NodeId,
   storage: FlatStorage,
   visit: (n: FlatNode) => void,
@@ -268,43 +219,6 @@ export function traverse(
     visit(n)
     const kids = childIdsOf(n)
     for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i])
-  }
-}
-
-/** Replace a child reference by index/key; demonstrates external mutation behavior */
-export function replaceChild(
-  parentId: NodeId,
-  which: number | string, // index for arrays, key for objects, 0 for singleton
-  newChildId: NodeId,
-  storage: FlatStorage,
-): void {
-  const p = storage.get(parentId)
-  if (!p) throw new Error(`Missing parent ${parentId}`)
-  switch (p.kind) {
-    case 'array': {
-      assert(typeof which === 'number', 'array expects numeric index')
-      assert(which >= 0 && which < p.items.length, 'index out of range')
-      p.items = p.items.map((id, i) => (i === which ? newChildId : id))
-      storage.set(p)
-      return
-    }
-    case 'object': {
-      assert(typeof which === 'string', 'object expects key')
-      p.entries = p.entries.map(([k, id]) =>
-        k === which
-          ? ([k, newChildId] as [string, NodeId])
-          : ([k, id] as [string, NodeId]),
-      )
-      storage.set(p)
-      return
-    }
-    case 'singleton': {
-      p.child = newChildId
-      storage.set(p)
-      return
-    }
-    case 'value':
-      throw new Error('value nodes have no children')
   }
 }
 
