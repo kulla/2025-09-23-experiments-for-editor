@@ -11,71 +11,69 @@
  */
 
 // ---------- Core Types ----------
-export type NodeId = string
-
-export type NodeKind = 'array' | 'object' | 'singleton' | 'value'
-
-/** Ordered tuple field in an object schema */
-export interface TupleField {
-  key: string // field name
-  type: string // type name (points to a NodeSpec in registry)
-  optional?: boolean // allowed to omit
-}
+type NodeId = string
 
 // Node specification variants
-export interface ArrayNodeSpec {
+interface ArrayNodeSpec {
   name: string
   kind: 'array'
-  itemType: string
+  itemSpec: NodeSpec
   isRoot?: boolean
 }
-export interface ObjectNodeSpec {
+interface ObjectNodeSpec {
   name: string
   kind: 'object'
   fields: TupleField[]
   isRoot?: boolean
 }
-export interface SingletonNodeSpec {
+
+interface TupleField {
+  key: string
+  type: NodeSpec
+}
+
+interface SingletonNodeSpec {
   name: string
   kind: 'singleton'
-  childType: string
+  childType: NodeSpec
   isRoot?: boolean
 }
-export interface PrimitiveNodeSpec {
+
+interface PrimitiveNodeSpec {
   name: string
   kind: 'value'
   isRoot?: boolean
 }
 
-export type NodeSpec =
+type NodeSpec =
   | ArrayNodeSpec
   | ObjectNodeSpec
   | SingletonNodeSpec
   | PrimitiveNodeSpec
 
 /** Spec registry */
-export type SpecRegistry = Record<string, NodeSpec>
+type SpecRegistry = Record<string, NodeSpec>
 
 // Flat node variants
-export interface ArrayFlatNode {
+interface ArrayFlatNode {
   id: NodeId
   type: string
   kind: 'array'
   items: NodeId[]
 }
-export interface ObjectFlatNode {
+interface ObjectFlatNode {
   id: NodeId
   type: string
   kind: 'object'
   entries: [key: string, childId: NodeId][]
 }
-export interface SingletonFlatNode {
+interface SingletonFlatNode {
   id: NodeId
   type: string
   kind: 'singleton'
   child: NodeId
 }
-export interface PrimitiveFlatNode {
+interface PrimitiveFlatNode {
   id: NodeId
   type: string
   kind: 'value'
@@ -83,20 +81,20 @@ export interface PrimitiveFlatNode {
 }
 
 /** Flat storage representation of a node */
-export type FlatNode =
+type FlatNode =
   | ArrayFlatNode
   | ObjectFlatNode
   | SingletonFlatNode
   | PrimitiveFlatNode
 
 /** Plain key-value storage */
-export interface FlatStorage {
+interface FlatStorage {
   get(id: NodeId): FlatNode | undefined
   set(node: FlatNode): void
 }
 
 /** In-memory implementation */
-export class MemStorage implements FlatStorage {
+class MemStorage implements FlatStorage {
   private map = new Map<NodeId, FlatNode>()
   get(id: string) {
     return this.map.get(id)
@@ -109,7 +107,7 @@ export class MemStorage implements FlatStorage {
 // ---------- Nested (rich) shape used at API edges ----------
 // The nested form is convenient for authoring; the storage stays flat.
 
-export type NestedNode =
+type NestedNode =
   | { type: string; kind: 'array'; items: NestedNode[] }
   | { type: string; kind: 'object'; fields: Record<string, NestedNode> }
   | { type: string; kind: 'singleton'; child: NestedNode }
@@ -117,10 +115,10 @@ export type NestedNode =
 
 // ---------- Utilities ----------
 
-export interface IdGenerator {
+interface IdGenerator {
   next(): NodeId
 }
-export class PrefixCounter implements IdGenerator {
+class PrefixCounter implements IdGenerator {
   private n = 0
   constructor(private prefix = 'n') {}
   next() {
@@ -129,11 +127,11 @@ export class PrefixCounter implements IdGenerator {
   }
 }
 
-export function assert(condition: unknown, msg: string): asserts condition {
+function assert(condition: unknown, msg: string): asserts condition {
   if (!condition) throw new Error(msg)
 }
 
-export function getSpec(reg: SpecRegistry, type: string): NodeSpec {
+function getSpec(reg: SpecRegistry, type: string): NodeSpec {
   const spec = reg[type]
   assert(!!spec, `Unknown type: ${type}`)
   return spec
@@ -142,7 +140,7 @@ export function getSpec(reg: SpecRegistry, type: string): NodeSpec {
 // ---------- External Behavior Functions (switching on kind) ----------
 
 /** Convert nested node -> flat nodes; return root id */
-export function storeNested(
+function storeNested(
   node: NestedNode,
   storage: FlatStorage,
   reg: SpecRegistry,
@@ -184,7 +182,7 @@ export function storeNested(
 }
 
 /** Reconstruct nested node from a flat id */
-export function loadNested(
+function loadNested(
   id: NodeId,
   storage: FlatStorage,
   reg: SpecRegistry,
@@ -216,7 +214,7 @@ export function loadNested(
 }
 
 /** Iterate child ids in storage order (helps generic algorithms) */
-export function childIdsOf(node: FlatNode): NodeId[] {
+function childIdsOf(node: FlatNode): NodeId[] {
   switch (node.kind) {
     case 'array':
       return node.items.slice()
@@ -256,11 +254,11 @@ function traverse(
  * - Body: array of paragraphs
  * - Article: object-as-ordered-tuple with title + body, and marked as root
  */
-export const REGISTRY: SpecRegistry = {
+const REGISTRY: SpecRegistry = {
   Text: { name: 'Text', kind: 'value' },
   Emphasis: { name: 'Emphasis', kind: 'singleton', childType: 'Text' }, // singleton wrapping Text for brevity
-  Paragraph: { name: 'Paragraph', kind: 'array', itemType: 'Text' },
-  Body: { name: 'Body', kind: 'array', itemType: 'Paragraph' },
+  Paragraph: { name: 'Paragraph', kind: 'array', itemSpec: 'Text' },
+  Body: { name: 'Body', kind: 'array', itemSpec: 'Paragraph' },
   Article: {
     name: 'Article',
     kind: 'object',
