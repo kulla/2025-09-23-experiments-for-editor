@@ -35,13 +35,22 @@ const exampleNode: NestedNode = {
   ],
 }
 
-function logNodeValue(node: NestedNode) {
-  if (node.spec.type === 'string') {
+function isNodeKind<S extends NodeSpec, K extends S['type']>(
+  kind: K,
+  node: NestedNode<S>,
+): node is NestedNode<Extract<S, { type: K }>> {
+  return node.spec.type === kind
+}
+
+function logNodeValue(node: NestedNode): void {
+  if (isNodeKind('string', node)) {
     console.log('String value:', node.value)
-  } else if (node.spec.type === 'array') {
-    console.log('Array values:')
-    for (const item of node.value) {
-      logNodeValue(item)
-    }
+  } else if (isNodeKind('array', node)) {
+    console.log('Array value:')
+    node.value.forEach((childNode) => {
+      logNodeValue(childNode)
+    })
   }
 }
+
+logNodeValue(exampleNode)
