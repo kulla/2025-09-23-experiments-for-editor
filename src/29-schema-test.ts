@@ -22,48 +22,72 @@ export interface TupleField {
   optional?: boolean // allowed to omit
 }
 
-/** Node specification */
-export interface NodeSpec {
-  name: string // type name
-  kind: NodeKind
-  isRoot?: boolean // root vs non-root
-  // for arrays
-  itemType?: string // type name of array items
-  // for singleton (wrapper around a single child)
-  childType?: string // type name for the wrapped child
-  // for object-as-ordered-tuple
-  fields?: TupleField[] // ordered fields
+// Node specification variants
+export interface ArrayNodeSpec {
+  name: string
+  kind: 'array'
+  itemType: string
+  isRoot?: boolean
 }
+export interface ObjectNodeSpec {
+  name: string
+  kind: 'object'
+  fields: TupleField[]
+  isRoot?: boolean
+}
+export interface SingletonNodeSpec {
+  name: string
+  kind: 'singleton'
+  childType: string
+  isRoot?: boolean
+}
+export interface PrimitiveNodeSpec {
+  name: string
+  kind: 'value'
+  isRoot?: boolean
+}
+
+export type NodeSpec =
+  | ArrayNodeSpec
+  | ObjectNodeSpec
+  | SingletonNodeSpec
+  | PrimitiveNodeSpec
 
 /** Spec registry */
 export type SpecRegistry = Record<string, NodeSpec>
 
+// Flat node variants
+export interface ArrayFlatNode {
+  id: NodeId
+  type: string
+  kind: 'array'
+  items: NodeId[]
+}
+export interface ObjectFlatNode {
+  id: NodeId
+  type: string
+  kind: 'object'
+  entries: [key: string, childId: NodeId][]
+}
+export interface SingletonFlatNode {
+  id: NodeId
+  type: string
+  kind: 'singleton'
+  child: NodeId
+}
+export interface PrimitiveFlatNode {
+  id: NodeId
+  type: string
+  kind: 'value'
+  value: unknown
+}
+
 /** Flat storage representation of a node */
 export type FlatNode =
-  | {
-      id: NodeId
-      type: string // e.g., 'Paragraph'
-      kind: 'array'
-      items: NodeId[] // child ids in order
-    }
-  | {
-      id: NodeId
-      type: string
-      kind: 'object'
-      entries: [key: string, childId: NodeId][] // ordered as in spec
-    }
-  | {
-      id: NodeId
-      type: string
-      kind: 'singleton'
-      child: NodeId // wrapped single child
-    }
-  | {
-      id: NodeId
-      type: string
-      kind: 'value'
-      value: unknown // primitive payload
-    }
+  | ArrayFlatNode
+  | ObjectFlatNode
+  | SingletonFlatNode
+  | PrimitiveFlatNode
 
 /** Plain key-value storage */
 export interface FlatStorage {
