@@ -13,36 +13,32 @@
 // ---------- Core Types ----------
 type NodeId = string
 
+type Value<V> = [name: string, value: V][] | V[] | V | string | number | boolean
+type FlatValue = Value<NodeId>
+
 // Node specification variants
-interface ArrayNodeSpec {
-  name: string
+interface ArrayNodeSpec extends BasicNodeSpec {
   kind: 'array'
   itemSpec: NodeSpec
-  isRoot?: boolean
 }
-interface ObjectNodeSpec {
-  name: string
+
+interface ObjectNodeSpec extends BasicNodeSpec {
   kind: 'object'
-  fields: TupleField[]
-  isRoot?: boolean
+  fields: [name: string, type: NodeSpec][]
 }
 
-interface TupleField {
-  key: string
-  type: NodeSpec
-}
-
-interface SingletonNodeSpec {
-  name: string
+interface SingletonNodeSpec extends BasicNodeSpec {
   kind: 'singleton'
   childType: NodeSpec
-  isRoot?: boolean
 }
 
-interface PrimitiveNodeSpec {
+interface PrimitiveNodeSpec extends BasicNodeSpec {
+  kind: 'primitive'
+}
+
+interface BasicNodeSpec {
   name: string
-  kind: 'value'
-  isRoot?: boolean
+  isRoot: boolean
 }
 
 type NodeSpec =
@@ -55,37 +51,11 @@ type NodeSpec =
 type SpecRegistry = Record<string, NodeSpec>
 
 // Flat node variants
-interface ArrayFlatNode {
+interface FlatNode<S extends NodeSpec = NodeSpec> {
   id: NodeId
   type: string
-  kind: 'array'
-  items: NodeId[]
+  value: S['FlatValue'] & object
 }
-interface ObjectFlatNode {
-  id: NodeId
-  type: string
-  kind: 'object'
-  entries: [key: string, childId: NodeId][]
-}
-interface SingletonFlatNode {
-  id: NodeId
-  type: string
-  kind: 'singleton'
-  child: NodeId
-}
-interface PrimitiveFlatNode {
-  id: NodeId
-  type: string
-  kind: 'value'
-  value: unknown
-}
-
-/** Flat storage representation of a node */
-type FlatNode =
-  | ArrayFlatNode
-  | ObjectFlatNode
-  | SingletonFlatNode
-  | PrimitiveFlatNode
 
 /** Plain key-value storage */
 interface FlatStorage {
@@ -175,7 +145,7 @@ function storeNested(
       return id
     }
     case 'value': {
-      storage.set({ id, type: spec.name, kind: 'value', value: node.value })
+      storage.set({ id, type: spec.name, kind: 'primitive', value: node.value })
       return id
     }
   }
@@ -208,7 +178,7 @@ function loadNested(
       return { type: spec.name, kind: 'singleton', child }
     }
     case 'value': {
-      return { type: spec.name, kind: 'value', value: (base as any).value }
+      return { type: spec.name, kind: 'primitive', value: (base as any).value }
     }
   }
 }
@@ -255,7 +225,7 @@ function traverse(
  * - Article: object-as-ordered-tuple with title + body, and marked as root
  */
 const REGISTRY: SpecRegistry = {
-  Text: { name: 'Text', kind: 'value' },
+  Text: { name: 'Text', kind: 'primitive' },
   Emphasis: { name: 'Emphasis', kind: 'singleton', childType: 'Text' }, // singleton wrapping Text for brevity
   Paragraph: { name: 'Paragraph', kind: 'array', itemSpec: 'Text' },
   Body: { name: 'Body', kind: 'array', itemSpec: 'Paragraph' },
@@ -280,7 +250,7 @@ function example() {
     type: 'Article',
     kind: 'object',
     fields: {
-      title: { type: 'Text', kind: 'value', value: 'Hello Flat World' },
+      title: { type: 'Text', kind: 'primitive', value: 'Hello Flat World' },
       body: {
         type: 'Body',
         kind: 'array',
@@ -289,8 +259,8 @@ function example() {
             type: 'Paragraph',
             kind: 'array',
             items: [
-              { type: 'Text', kind: 'value', value: 'This is ' },
-              { type: 'Text', kind: 'value', value: 'fine.' },
+              { type: 'Text', kind: 'primitive', value: 'This is ' },
+              { type: 'Text', kind: 'primitive', value: 'fine.' },
             ],
           },
         ],
