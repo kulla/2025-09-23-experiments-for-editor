@@ -42,41 +42,34 @@ const S = {
 } as const
 
 // ---------- Branded correlation (nominal pair) ----------
-declare const schemaBrand: unique symbol
-declare const valueBrand: unique symbol
 
-type BrandedSchema<S extends Schema> = S & { readonly [schemaBrand]: 'schema' }
-type BrandedValue<S extends Schema> = JSONValue<S> & {
-  readonly [valueBrand]: 'value'
+type NestedNode<S extends Schema> = {
+  readonly schema: S
+  readonly value: JSONValue<S>
 }
 
-type Paired<S extends Schema> = {
-  readonly schema: BrandedSchema<S>
-  readonly value: BrandedValue<S>
-}
-
-function pair<S extends Schema>(schema: S, value: JSONValue<S>): Paired<S> {
-  return {
-    schema: schema as BrandedSchema<S>,
-    value: value as BrandedValue<S>,
-  }
+function nestedNode<S extends Schema>(
+  schema: S,
+  value: JSONValue<S>,
+): NestedNode<S> {
+  return { schema, value }
 }
 
 // ---------- mapArray: map elements of an ArraySchema (can change element schema) ----------
 function mapArray<E extends Schema, O>(
-  p: Paired<ArraySchema<E>>,
-  f: (el: Paired<E>, index: number) => O,
+  p: NestedNode<ArraySchema<E>>,
+  f: (el: NestedNode<E>, index: number) => O,
 ): O[] {
-  return p.value.map((e, index) => f(pair(p.schema.element, e), index))
+  return p.value.map((e, index) => f(nestedNode(p.schema.element, e), index))
 }
 
 // ---------- mapProp: map a single property of an ObjectSchema (can change that property's schema) ----------
-function mapProp<P extends Record<string, Schema>, K extends keyof P, O>(
-  p: Paired<ObjectSchema<P>>,
+function mapProp<V extends Schema, K extends string, O>(
   key: K,
-  f: (prop: Paired<P[K]>) => O,
+  p: NestedNode<ObjectSchema<{ [K2 in K]: V }>>,
+  f: (prop: NestedNode<V>) => O,
 ): O {
-  return f(pair(p.schema.props[key], p.value[key]))
+  return f(nestedNode(p.schema.props[key], p.value[key]))
 }
 
 // ---------- Demo ----------
@@ -89,14 +82,14 @@ const schema = S.object({
 })
 
 // Paired value
-const node = pair(schema, {
+const node = nestedNode(schema, {
   title: 'hello world',
   tags: ['a', 'b', 'c'] as const,
 })
 
 // 1) mapArray: uppercase all tags (element schema unchanged)
 const tagsUpper = mapArray(
-  pair(schema.props.tags, node.value.tags),
+  nestedNode(schema.props.tags, node.value.tags),
   ({ value }) => value.toUpperCase(),
 )
 
@@ -104,7 +97,7 @@ console.log(tagsUpper) // ['A', 'B', 'C']
 // tagsUpper: Paired<ArraySchema<StringSchema>>
 
 // 2) mapProp: update the 'title' property (schema unchanged)
-const node2 = mapProp(node, 'title', ({ value }) => value.toUpperCase())
+const node2 = mapProp('title', node, ({ value }) => value.toUpperCase())
 
 console.log(node2)
 
