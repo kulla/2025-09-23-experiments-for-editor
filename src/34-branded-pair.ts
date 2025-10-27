@@ -15,7 +15,7 @@ interface ObjectSchema<
   props: Props
 }
 
-type Schema = StringSchema | ArraySchema<any> | ObjectSchema<any>
+type Schema = StringSchema | ArraySchema | ObjectSchema
 
 // ---------- JSONValue (non-distributive wrapper to avoid union explosion) ----------
 type _JSONValue<S> = S extends StringSchema
@@ -67,7 +67,6 @@ function mapArray<E extends Schema, O>(
   p: Paired<ArraySchema<E>>,
   f: (el: Paired<E>, index: number) => O,
 ): O[] {
-  const arr = p.value
   return p.value.map((e, index) => f(pair(p.schema.element, e), index))
 }
 
