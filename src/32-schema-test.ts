@@ -83,9 +83,10 @@ type FlatValue<S extends Schema = Schema> = S extends StringSchema
       ? (readonly [string, Key])[]
       : never
 
-interface FlatNode<S extends Schema> {
+interface FlatNode<S extends Schema = Schema> {
   spec: S
   key: Key
+  parentKey: Key | null
   value: FlatValue<S>
 }
 
@@ -96,8 +97,8 @@ function isFlatKind<S extends Schema, T extends S['type']>(
   return node.spec.type === type
 }
 
-class FlatValueStorage {
-  private map = new Map<Key, FlatValue>()
+class FlatStorage {
+  private map = new Map<Key, FlatNode>()
   private keyGenerator = new PrefixCounter('k')
 
   get(id: Key) {
@@ -108,10 +109,14 @@ class FlatValueStorage {
     return value
   }
 
-  insert(createValue: (key: Key) => FlatValue): Key {
+  insert(
+    spec: Schema,
+    parentKey: Key | null,
+    createValue: (key: Key) => FlatValue,
+  ): Key {
     const key = this.keyGenerator.next()
     const value = createValue(key)
-    this.map.set(key, value)
+    this.map.set(key, { key, parentKey, value, spec })
     return key
   }
 }
@@ -125,21 +130,59 @@ class PrefixCounter {
   }
 }
 
-function store(storage: FlatValueStorage, node: JsonNode<Schema>): Key {
+function store(
+  storage: FlatStorage,
+  node: JsonNode<Schema>,
+  parentKey: Key | null = null,
+): Key {
   if (isJsonKind(node, 'object')) {
-    const entries = node.spec.properties.map(([propName, propSchema]) => {
-      const propNode = {
-        spec: propSchema,
-        value: node.value[propName] as JSONValue<Schema>,
-      }
-      const propKey = store(storage, propNode)
-      return [propName, propKey] as const
+    return storage.insert(node.spec, parentKey, (key) => {
+      return node.spec.properties.map(([propName, propSchema]) => {
+        const propNode = {
+          spec: propSchema,
+          value: node.value[propName] as JSONValue<Schema>,
+        }
+        const propKey = store(storage, propNode, key)
+        return [propName, propKey] as const
+      })
     })
-
-    return storage.insert(() => entries)
   } else if (isJsonKind(node, 'string') || isJsonKind(node, 'boolean')) {
-    return storage.insert(() => node.value)
+    return storage.insert(node.spec, parentKey, () => node.value)
   } else {
     throw new Error(`Unsupported schema type: ${node.spec.type}`)
   }
 }
+
+const rootNode: JsonNode<typeof MultipleChoiceAnswerType> = {
+  spec: MultipleChoiceAnswerType,
+  value: { isCorrect: true, text: 'Choice A' },
+}
+
+const storage = new FlatStorage()
+const rootKey = store(storage, rootNode)
+
+console.log('Root key:', rootKey)
+console.log('Root node:', storage.get(rootKey))
+
+function retrieve(storage: FlatStorage, key: Key): JsonNode<Schema> {
+  const flatNode = storage.get(key)
+
+  if (isFlatKind(flatNode, 'object')) {
+    const objValue: Record<string, JSONValue<Schema>> = {}
+    for (const [propName, propKey] of flatNode.value) {
+      const propNode = retrieve(storage, propKey)
+      objValue[propName] = propNode.value
+    }
+    return { spec: flatNode.spec, value: objValue }
+  } else if (
+    isFlatKind(flatNode, 'string') ||
+    isFlatKind(flatNode, 'boolean')
+  ) {
+    return { spec: flatNode.spec, value: flatNode.value as JSONValue<Schema> }
+  } else {
+    throw new Error(`Unsupported schema type: ${flatNode.spec.type}`)
+  }
+}
+
+const retrievedNode = retrieve(storage, rootKey)
+console.log('Retrieved node:', retrievedNode)
