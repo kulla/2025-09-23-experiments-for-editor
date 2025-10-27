@@ -10,15 +10,11 @@ interface BooleanSchema extends SchemaBase {
   type: 'boolean'
 }
 
-interface ObjectSchema extends SchemaBase {
+interface ObjectSchema<P extends string = string> extends SchemaBase {
   type: 'object'
-  properties: Property[]
+  record: Record<P, Schema>
+  properties: [P, Schema][]
 }
-
-type Property<Name extends string = string, Value extends Schema = Schema> = [
-  name: Name,
-  value: Value,
-]
 
 // TODO: name do not need to be specified, will be automatically be computed
 
@@ -29,13 +25,17 @@ const S = {
   boolean(name: string): BooleanSchema {
     return { type: 'boolean', name }
   },
-  object<N extends string, P extends Property[]>(name: N, ...properties: P) {
-    return { type: 'object', name, properties } satisfies ObjectSchema
-  },
-  property<N extends string, S extends Schema>(
+  object<N extends string, P extends [string, Schema][]>(
     name: N,
-    value: S,
-  ): Property<N, S> {
+    ...properties: P
+  ) {
+    const record = Object.fromEntries(properties) as {
+      [K in P[number] as K[0]]: K[1]
+    }
+
+    return { type: 'object', name, record, properties } satisfies ObjectSchema
+  },
+  property<N extends string, S extends Schema>(name: N, value: S): [N, S] {
     return [name, value]
   },
 } as const
@@ -130,6 +130,15 @@ class PrefixCounter {
   }
 }
 
+function jsonGetProperty<
+  O extends ObjectSchema,
+  P extends keyof O['record'] & keyof JsonNode<O>,
+>(node: JsonNode<O>, propertyName: P): JsonNode<O['record'][P]> {
+  const propSchema = node.spec.record[propertyName]
+  const propValue = node.value[propertyName]
+  return { spec: propSchema, value: propValue }
+}
+
 function store(
   storage: FlatStorage,
   node: JsonNode<Schema>,
@@ -137,12 +146,8 @@ function store(
 ): Key {
   if (isJsonKind(node, 'object')) {
     return storage.insert(node.spec, parentKey, (key) => {
-      return node.spec.properties.map(([propName, propSchema]) => {
-        const propNode = {
-          spec: propSchema,
-          value: node.value[propName] as JSONValue<Schema>,
-        }
-        const propKey = store(storage, propNode, key)
+      return node.spec.properties.map(([propName]) => {
+        const propKey = store(storage, jsonGetProperty(node, propName), key)
         return [propName, propKey] as const
       })
     })
@@ -157,6 +162,9 @@ const rootNode: JsonNode<typeof MultipleChoiceAnswerType> = {
   spec: MultipleChoiceAnswerType,
   value: { isCorrect: true, text: 'Choice A' },
 }
+
+const isCorrectNode = jsonGetProperty(rootNode, 'isCorrect')
+console.log('isCorrect node:', isCorrectNode)
 
 const storage = new FlatStorage()
 const rootKey = store(storage, rootNode)
