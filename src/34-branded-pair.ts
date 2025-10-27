@@ -64,10 +64,10 @@ function mapArray<E extends Schema, O>(
 }
 
 // ---------- mapProp: map a single property of an ObjectSchema (can change that property's schema) ----------
-function mapProp<V extends Schema, K extends string, O>(
+function mapProp<P extends Record<string, Schema>, K extends keyof P, O>(
+  p: NestedNode<ObjectSchema<P>>,
   key: K,
-  p: NestedNode<ObjectSchema<{ [K2 in K]: V }>>,
-  f: (prop: NestedNode<V>) => O,
+  f: (prop: NestedNode<P[K]>) => O,
 ): O {
   return f(nestedNode(p.schema.props[key], p.value[key]))
 }
@@ -97,7 +97,7 @@ console.log(tagsUpper) // ['A', 'B', 'C']
 // tagsUpper: Paired<ArraySchema<StringSchema>>
 
 // 2) mapProp: update the 'title' property (schema unchanged)
-const node2 = mapProp('title', node, ({ value }) => value.toUpperCase())
+const node2 = mapProp(node, 'title', ({ value }) => value.toUpperCase())
 
 console.log(node2)
 
