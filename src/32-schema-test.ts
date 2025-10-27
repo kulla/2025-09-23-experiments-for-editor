@@ -50,8 +50,6 @@ const MultipleChoiceAnswerType = S.object(
   S.property('text', stringType),
 ) satisfies Schema
 
-export type TestJsonValue1 = JSONValue<typeof MultipleChoiceAnswerType>
-
 type JSONValue<S extends Schema> = S extends StringSchema
   ? string
   : S extends BooleanSchema
@@ -59,3 +57,89 @@ type JSONValue<S extends Schema> = S extends StringSchema
     : S extends ObjectSchema
       ? { [K in S['properties'][number] as K[0]]: JSONValue<K[1]> }
       : never
+
+export type TestJsonValue1 = JSONValue<typeof MultipleChoiceAnswerType>
+
+interface JsonNode<S extends Schema> {
+  spec: S
+  value: JSONValue<S>
+}
+
+function isJsonKind<S extends Schema, T extends S['type']>(
+  node: JsonNode<S>,
+  type: T,
+): node is JsonNode<Extract<S, { type: T }>> {
+  return node.spec.type === type
+}
+
+type Branded<T, B> = T & { __brand: B }
+type Key = Branded<string, 'key'>
+
+type FlatValue<S extends Schema = Schema> = S extends StringSchema
+  ? string
+  : S extends BooleanSchema
+    ? boolean
+    : S extends ObjectSchema
+      ? (readonly [string, Key])[]
+      : never
+
+interface FlatNode<S extends Schema> {
+  spec: S
+  key: Key
+  value: FlatValue<S>
+}
+
+function isFlatKind<S extends Schema, T extends S['type']>(
+  node: FlatNode<S>,
+  type: T,
+): node is FlatNode<Extract<S, { type: T }>> {
+  return node.spec.type === type
+}
+
+class FlatValueStorage {
+  private map = new Map<Key, FlatValue>()
+  private keyGenerator = new PrefixCounter('k')
+
+  get(id: Key) {
+    const value = this.map.get(id)
+
+    if (!value) throw new Error(`Key not found: ${id}`)
+
+    return value
+  }
+
+  insert(createValue: (key: Key) => FlatValue): Key {
+    const key = this.keyGenerator.next()
+    const value = createValue(key)
+    this.map.set(key, value)
+    return key
+  }
+}
+
+class PrefixCounter {
+  private n = 0
+  constructor(private prefix = 'n') {}
+  next() {
+    this.n += 1
+    return `${this.prefix}${this.n}` as Key
+  }
+}
+
+function store(storage: FlatValueStorage, node: JsonNode<Schema>): Key {
+  if (isJsonKind(node, 'object')) {
+    const entries = node.spec.properties.map(([propName, propSchema]) => {
+      const propNode = {
+        spec: propSchema,
+        value: node.value[propName] as JSONValue<Schema>,
+      }
+      const propKey = store(storage, propNode)
+      return [propName, propKey] as const
+    })
+
+    return storage.insert(() => entries)
+  } else if (isJsonKind(node, 'string') || isJsonKind(node, 'boolean')) {
+    return storage.insert(() => node.value)
+  } else {
+    throw new Error(`Unsupported schema type: ${node.spec.type}`)
+  }
+}
