@@ -1,9 +1,10 @@
 import type { Simplify } from 'type-fest'
 
 interface HKT<A> {
-  Schema: A extends SchemaDef
-    ? { Input: SchemaInput<A>; Output: Schema<A> }
-    : never
+  Schema: {
+    Input: Simplify<A extends SchemaDef ? SchemaInput<A> : never>
+    Output: Simplify<A extends SchemaDef ? Schema<A> : never>
+  }
 }
 
 interface SchemaDef {
