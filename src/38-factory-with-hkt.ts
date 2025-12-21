@@ -1,5 +1,7 @@
 interface HKT<A> {
-  Schema: A extends SchemaDef ? Schema<A> : never
+  Schema: { Input:  A extends SchemaDef ? SchemaInput<A> : never
+           Output:
+    A extends SchemaDef ? Schema<A> : never }
 }
 
 interface SchemaDef {
@@ -18,14 +20,13 @@ type Schema<D extends SchemaDef> = D['Parameters'] & {
   kind: D['kind']
 }
 
-type Factory<I, F extends keyof HKT<I>> = {
-  create(input: I): HKT<I>[F]
+type Factory<D, F extends keyof HKT<D>> = {
+  create(input: HKT<D>[F]["Input"]): HKT<D>[F]["Output"]
 }
 
-const schemaFactory = <D extends SchemaDef>(): Factory<
-  SchemaInput<D>,
-  'Schema'
-> => ({
+export type ExampleSchemaFactory = Factory<{ kind: "string", FlatValue: string, Parameters: { maxLength?: number }}, "Schema">
+
+const schemaFactory = <D extends SchemaDef>():  => ({
   create: ({ kind, ...parameters }) => {
     return {
       kind,
