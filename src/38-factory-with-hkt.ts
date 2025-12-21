@@ -47,6 +47,7 @@ export const MyStringSchema = string.create({ kind: 'string', maxLength: 255 })
 const boolean = schemaFactory<{
   kind: 'boolean'
   FlatValue: boolean
+  // biome-ignore lint: Is okay
   Parameters: {}
 }>()
 
