@@ -1,3 +1,5 @@
+import type { Simplify } from 'type-fest'
+
 interface HKT<A> {
   Schema: {
     Input: A extends SchemaDef ? SchemaInput<A> : never
@@ -12,14 +14,18 @@ interface SchemaDef {
   Parameters: {}
 }
 
-type SchemaInput<D extends SchemaDef> = D['Parameters'] & {
-  kind: D['kind']
-}
+type SchemaInput<D extends SchemaDef> = Simplify<
+  D['Parameters'] & {
+    kind: D['kind']
+  }
+>
 
-type Schema<D extends SchemaDef> = D['Parameters'] & {
-  isFlat: (value: unknown) => value is D['FlatValue']
-  kind: D['kind']
-}
+type Schema<D extends SchemaDef> = Simplify<
+  D['Parameters'] & {
+    isFlat: (value: unknown) => value is D['FlatValue']
+    kind: D['kind']
+  }
+>
 
 type Factory<D, F extends keyof HKT<D>> = {
   create(input: HKT<D>[F]['Input']): HKT<D>[F]['Output']
@@ -30,10 +36,7 @@ export type ExampleFactory = Factory<
   'Schema'
 >
 
-const schemaFactory = <D extends SchemaDef>(): Factory<
-  SchemaInput<D>,
-  'Schema'
-> => ({
+const schemaFactory = <D extends SchemaDef>(): Factory<D, 'Schema'> => ({
   create: ({ kind, ...parameters }) => {
     return {
       kind,

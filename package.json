@@ -12,6 +12,7 @@
   "dependencies": {
     "es-toolkit": "^1.39.10",
     "ts-toolbelt": "^9.6.0",
+    "type-fest": "^5.3.1",
     "yjs": "^13.6.27"
   }
 }
