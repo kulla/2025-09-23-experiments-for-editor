@@ -18,8 +18,8 @@ type Schema<D extends SchemaDef> = D['Parameters'] & {
   kind: D['kind']
 }
 
-type Factory<I extends SchemaDef, F extends keyof HKT<I>> = {
-  create(input: I): HKT<I>[F]
+type Factory<D extends SchemaDef, F extends keyof HKT<D>> = {
+  create(input: SchemaInput<D>): HKT<D>[F]
 }
 
 const schemaFactory = <D extends SchemaDef>(): Factory<D, 'Schema'> => ({
@@ -32,6 +32,22 @@ const schemaFactory = <D extends SchemaDef>(): Factory<D, 'Schema'> => ({
         // For demonstration, we'll just return false
         return false
       },
-    } satisfies Schema<D>
+    }
   },
 })
+
+const string = schemaFactory<{
+  kind: 'string'
+  FlatValue: string
+  Parameters: { maxLength?: number; minLength?: number }
+}>()
+
+export const MyStringSchema = string.create({ kind: 'string', maxLength: 255 })
+
+const boolean = schemaFactory<{
+  kind: 'boolean'
+  FlatValue: boolean
+  Parameters: {}
+}>()
+
+export const MyBooleanSchema = boolean.create({ kind: 'boolean' })
