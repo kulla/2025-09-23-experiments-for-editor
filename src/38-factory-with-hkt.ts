@@ -25,6 +25,11 @@ type Factory<D, F extends keyof HKT<D>> = {
   create(input: HKT<D>[F]['Input']): HKT<D>[F]['Output']
 }
 
+export type ExampleFactory = Factory<
+  { kind: 'string'; FlatValue: string; Parameters: { maxLength?: number } },
+  'Schema'
+>
+
 const schemaFactory = <D extends SchemaDef>(): Factory<
   SchemaInput<D>,
   'Schema'
