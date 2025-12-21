@@ -2,8 +2,8 @@ import type { Simplify } from 'type-fest'
 
 interface HKT<A> {
   Schema: {
-    Input: Simplify<A extends SchemaDef ? SchemaInput<A> : never>
-    Output: Simplify<A extends SchemaDef ? Schema<A> : never>
+    Input: A extends SchemaDef ? SchemaInput<A> : never
+    Output: A extends SchemaDef ? Schema<A> : never
   }
 }
 
@@ -14,18 +14,15 @@ interface SchemaDef {
   Parameters: {}
 }
 
-type SchemaInput<D extends SchemaDef> = Simplify<
-  D['Parameters'] & {
-    kind: D['kind']
-  }
->
+type SchemaInput<D extends SchemaDef> = {
+  parameters: D['Parameters']
+  kind: D['kind']
+}
 
-type Schema<D extends SchemaDef> = Simplify<
-  D['Parameters'] & {
-    isFlat: (value: unknown) => value is D['FlatValue']
-    kind: D['kind']
-  }
->
+type Schema<D extends SchemaDef> = D['Parameters'] & {
+  isFlat: (value: unknown) => value is D['FlatValue']
+  kind: D['kind']
+}
 
 type Factory<D, F extends keyof HKT<D>> = {
   create(input: HKT<D>[F]['Input']): HKT<D>[F]['Output']
@@ -37,7 +34,8 @@ export type ExampleFactory = Factory<
 >
 
 const schemaFactory = <D extends SchemaDef>(): Factory<D, 'Schema'> => ({
-  create: ({ kind, ...parameters }) => {
+  //@ts-expect-error Limitation of current implementation
+  create({ kind, parameters }) {
     return {
       kind,
       ...parameters,
@@ -46,7 +44,7 @@ const schemaFactory = <D extends SchemaDef>(): Factory<D, 'Schema'> => ({
         // For demonstration, we'll just return false
         return false
       },
-    }
+    } satisfies Schema<D>
   },
 })
 
