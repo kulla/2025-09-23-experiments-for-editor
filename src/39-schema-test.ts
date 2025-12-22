@@ -9,6 +9,23 @@ interface Schema<F = unknown> {
 
 type JSONValue<S extends Schema> = S extends Schema<infer U> ? U : never
 
+function createSchemaFactory<F extends Factory<Schema[], object>>(
+  factory: F,
+): { create: F; is: (value: unknown) => value is Output<F> } {
+  const typeSymbol = Symbol()
+  const create = ((arg: Input<F>) => ({
+    [typeSymbol]: true,
+    ...factory(arg),
+  })) as F
+
+  return {
+    create,
+    is(value: unknown): value is Output<F> {
+      return typeof value === 'object' && value !== null && typeSymbol in value
+    },
+  }
+}
+
 const boolean = createSchemaFactory(
   (): Schema<boolean> => ({
     isJsonValue(value: unknown) {
@@ -49,19 +66,3 @@ export const BooleanOrNumberSchema = union.create([
   NumberSchema,
   StringSchema,
 ])
-
-function createSchemaFactory<F extends Factory<Schema[], object>>(
-  factory: F,
-): { create: F; is: (value: unknown) => value is Output<F> } {
-  const typeSymbol = Symbol()
-
-  return {
-    create: ((arg: Input<F>) => ({
-      [typeSymbol]: true,
-      ...factory(arg),
-    })) as F,
-    is(value: unknown): value is Output<F> {
-      return typeof value === 'object' && value !== null && typeSymbol in value
-    },
-  }
-}
