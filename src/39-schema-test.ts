@@ -1,4 +1,4 @@
-type Factory<I extends Schema[], O> = (...args: I) => O
+type Factory<I extends Schema[], O> = (arg: I) => O
 
 type Output<F> = F extends Factory<infer _I, infer O> ? O : never
 
@@ -33,7 +33,7 @@ const stringSchema = withGuard(
 )
 
 const unionSchema = withGuard(
-  <F extends Schema[]>(...schemas: F): Schema<JSONValue<F[number]>> => ({
+  <F extends Schema[]>(schemas: F): Schema<JSONValue<F[number]>> => ({
     isJsonValue(value: unknown): value is JSONValue<F[number]> {
       return schemas.some((schema) => schema.isJsonValue(value))
     },
@@ -43,11 +43,11 @@ const unionSchema = withGuard(
 export const BooleanSchema = booleanSchema.create()
 export const NumberSchema = numberSchema.create()
 export const StringSchema = stringSchema.create()
-export const BooleanOrNumberSchema = unionSchema.create(
+export const BooleanOrNumberSchema = unionSchema.create([
   BooleanSchema,
   NumberSchema,
   StringSchema,
-)
+])
 
 function withGuard<F extends Factory<Schema[], object>>(
   factory: F,
