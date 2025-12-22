@@ -8,7 +8,7 @@ interface Schema<F = unknown> {
 
 type JSONValue<S extends Schema> = S extends Schema<infer U> ? U : never
 
-const booleanSchema = withGuard(
+const boolean = createSchemaFactory(
   (): Schema<boolean> => ({
     isJsonValue(value: unknown) {
       return typeof value === 'boolean'
@@ -16,7 +16,7 @@ const booleanSchema = withGuard(
   }),
 )
 
-const numberSchema = withGuard(
+const number = createSchemaFactory(
   (): Schema<number> => ({
     isJsonValue(value: unknown) {
       return typeof value === 'number'
@@ -24,7 +24,7 @@ const numberSchema = withGuard(
   }),
 )
 
-const stringSchema = withGuard(
+const string = createSchemaFactory(
   (): Schema<string> => ({
     isJsonValue(value: unknown) {
       return typeof value === 'string'
@@ -32,7 +32,7 @@ const stringSchema = withGuard(
   }),
 )
 
-const unionSchema = withGuard(
+const union = createSchemaFactory(
   <F extends Schema[]>(schemas: F): Schema<JSONValue<F[number]>> => ({
     isJsonValue(value: unknown): value is JSONValue<F[number]> {
       return schemas.some((schema) => schema.isJsonValue(value))
@@ -40,16 +40,16 @@ const unionSchema = withGuard(
   }),
 )
 
-export const BooleanSchema = booleanSchema.create()
-export const NumberSchema = numberSchema.create()
-export const StringSchema = stringSchema.create()
-export const BooleanOrNumberSchema = unionSchema.create([
+export const BooleanSchema = boolean.create()
+export const NumberSchema = number.create()
+export const StringSchema = string.create()
+export const BooleanOrNumberSchema = union.create([
   BooleanSchema,
   NumberSchema,
   StringSchema,
 ])
 
-function withGuard<F extends Factory<Schema[], object>>(
+function createSchemaFactory<F extends Factory<Schema[], object>>(
   factory: F,
 ): { create: F; is: (value: unknown) => value is Output<F> } {
   const typeSymbol = Symbol()
