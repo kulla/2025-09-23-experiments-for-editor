@@ -13,10 +13,9 @@ function createSchemaFactory<F extends Factory<Schema[], object>>(
   factory: F,
 ): { create: F; is: (value: unknown) => value is Output<F> } {
   const typeSymbol = Symbol()
-  const create = ((arg: Input<F>) => ({
-    [typeSymbol]: true,
-    ...factory(arg),
-  })) as F
+  const create = ((arg: Input<F>) => {
+    return { [typeSymbol]: true, ...factory(arg) }
+  }) as F
 
   return {
     create,
