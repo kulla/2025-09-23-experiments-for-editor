@@ -1,5 +1,6 @@
 type Factory<I, O> = (arg: I) => O
 
+type Input<F> = F extends Factory<infer I, infer _O> ? I : never
 type Output<F> = F extends Factory<infer _I, infer O> ? O : never
 
 interface Schema<F = unknown> {
@@ -55,9 +56,10 @@ function createSchemaFactory<F extends Factory<Schema[], object>>(
   const typeSymbol = Symbol()
 
   return {
-    create(arg) {
-      return { [typeSymbol]: true, ...factory(arg) }
-    },
+    create: ((arg: Input<F>) => ({
+      [typeSymbol]: true,
+      ...factory(arg),
+    })) as F,
     is(value: unknown): value is Output<F> {
       return typeof value === 'object' && value !== null && typeSymbol in value
     },
