@@ -1,4 +1,4 @@
-type Factory<I extends Schema[], O> = (arg: I) => O
+type Factory<I, O> = (arg: I) => O
 
 type Output<F> = F extends Factory<infer _I, infer O> ? O : never
 
