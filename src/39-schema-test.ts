@@ -55,10 +55,9 @@ function createSchemaFactory<F extends Factory<Schema[], object>>(
   const typeSymbol = Symbol()
 
   return {
-    create: ((arg) => ({
-      [typeSymbol]: true,
-      ...factory(arg),
-    })) as F,
+    create(arg) {
+      return { [typeSymbol]: true, ...factory(arg) }
+    },
     is(value: unknown): value is Output<F> {
       return typeof value === 'object' && value !== null && typeSymbol in value
     },
