@@ -1,6 +1,5 @@
 type Factory<I, O> = (arg: I) => O
 
-type Input<F> = F extends Factory<infer I, infer _O> ? I : never
 type Output<F> = F extends Factory<infer _I, infer O> ? O : never
 
 interface Schema<F = unknown> {
@@ -8,22 +7,6 @@ interface Schema<F = unknown> {
 }
 
 type JSONValue<S extends Schema> = S extends Schema<infer U> ? U : never
-
-function createSchemaFactory<F extends Factory<unknown, object>>(
-  factory: F,
-): { create: F; is: (value: unknown) => value is Output<F> } {
-  const typeSymbol = Symbol()
-  const create = ((arg: Input<F>) => {
-    return { [typeSymbol]: true, ...factory(arg) }
-  }) as F
-
-  return {
-    create,
-    is(value: unknown): value is Output<F> {
-      return typeof value === 'object' && value !== null && typeSymbol in value
-    },
-  }
-}
 
 const boolean = createSchemaFactory(
   (): Schema<boolean> => ({
@@ -65,3 +48,18 @@ export const BooleanOrNumberSchema = union.create([
   NumberSchema,
   StringSchema,
 ])
+
+function createSchemaFactory<F extends Factory<Schema[], object>>(
+  factory: F,
+): { create: F; is: (value: unknown) => value is Output<F> } {
+  const typeSymbol = Symbol()
+
+  return {
+    create(arg) {
+      return { [typeSymbol]: true, ...factory(arg) }
+    },
+    is(value: unknown): value is Output<F> {
+      return typeof value === 'object' && value !== null && typeSymbol in value
+    },
+  }
+}
