@@ -16,6 +16,6 @@ class A implements Text {
   toString = textToString
 }
 
-const foo = new A("Hello World")
+const foo = new A('Hello World')
 
 console.log(foo.toString())
